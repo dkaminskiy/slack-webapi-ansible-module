@@ -1,0 +1,26 @@
+- set_fact:
+    thread_id: "{{ hostvars['SLACK_TS_HOLDER']['thread_ts'] }}"
+    channel_id: "{{ hostvars['SLACK_TS_HOLDER']['chat'] }}"
+  run_once: yes
+  when:
+    - thread_id is not defined
+    - hostvars['SLACK_TS_HOLDER'] is defined
+  tags:
+    - notify
+
+
+- name: "{{ nname }}"
+  slack_webapi:
+    token: "xoxp-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    msg: "{{ msg }}"
+    color: "{{ color | default('good') }}"
+    channel: "{{ channel_id }}"
+    ts: "{{ thread_id }}"
+    method: "chat.update"
+    thread_id: "{{ thread_id | default('') }}"
+    username: "Bamboo"
+    icon_emoji: ":bamboo_icon:"
+  register: result
+  tags:
+    - notify
+

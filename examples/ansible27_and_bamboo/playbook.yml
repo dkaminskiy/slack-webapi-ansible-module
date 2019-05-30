@@ -1,0 +1,50 @@
+---
+
+- hosts: some-hosts-group
+  gather_facts: true
+  serial: 1
+  any_errors_fatal: true
+
+  vars_files:
+    - ../../options.yml
+
+  tasks:
+    - name: Send init message and run playbook
+      block:
+        - include: nname="send starting message to slack" notify.yml msg="{{":"}}bamboo_icon_n{{":"}} {{ bambooProject }} - {{ bambooRelease }} manual run by {{ manualRunBy }} to {{ bambooEnv }}. <{{ resultsUrl }}|See details>. " color="warning"
+          when: 
+            - inventory_hostname == ansible_play_hosts[0]
+            - bambooProject is defined
+            - bambooRelease is defined
+            - manualRunBy is defined
+            - bambooEnv is defined
+          tags:
+            - notify
+
+        - include: nname="send starting message to slack" notify.yml msg="{{":"}}bamboo_icon_n{{":"}} PSM deploy playbook manual run" # thread_id="{{ result.slackreply.ts }}"
+          when: 
+            - inventory_hostname == ansible_play_hosts[0]
+            - bambooProject is not defined
+            - bambooRelease is not defined
+            - manualRunBy is not defined
+            - bambooEnv is not defined
+
+        - name: Import playbook
+          import_tasks: deploy.yml
+      rescue:
+        # Ansible bug workaround. When using block in an included file, "rescue" doesn't have "ansible_failed_task"/"ansible_failed_result" variables defined (https://github.com/ansible/ansible/issues/29047) 
+        - set_fact:
+            failedtaskmsg: "{{ ansible_failed_task }}"
+            failedresultmsg: "{{ ansible_failed_result }}"
+          tags:
+            - notify
+        - include: nname="send error message to slack" tasks/notify.yml msg="Task failed on *{{ ansible_hostname }} ({{ inventory_hostname }})*.\n TASK [{{ failedtaskmsg.name }}]\n FAILED! => cmd{{":"}} {{ failedresultmsg.cmd }}, msg{{":"}} {{ failedresultmsg.msg }}"  color="danger"
+          ignore_errors: yes
+        - include: nname="send finish message to slack (failed)" update_notification.yml msg="{{":"}}bamboo_failed{{":"}} {{ bambooProject }} - {{ bambooRelease }} manual run by {{ manualRunBy }} to {{ bambooEnv }}.Failed. <{{ resultsUrl }}|See details>." color="danger"
+          ignore_errors: yes
+        - meta: end_play
+          ignore_errors: no
+      always:
+        - include: nname="send finish message to slack (success)" update_notification.yml msg="{{":"}}bamboo_success{{":"}} {{ bambooProject }} - {{ bambooRelease }} manual run by {{ manualRunBy }} to {{ bambooEnv }}. Successfully finished. <{{ resultsUrl }}|See details>." color="good"
+          when:
+            - inventory_hostname == ansible_play_hosts[-1]

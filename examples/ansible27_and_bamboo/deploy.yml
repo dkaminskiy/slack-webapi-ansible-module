@@ -1,0 +1,93 @@
+    - name: enable zabbix maintenance
+      zabbix_maintenance:
+        name: "Deploy {{ zabbix_host }}"
+        host_names: "{{ zabbix_host }}"
+        minutes: 20
+        server_url: "{{ zabbix_api.url }}"
+        login_user: "{{ zabbix_api.user }}"
+        login_password: "{{ zabbix_api.password }}"
+        state: present
+      delegate_to: localhost
+      when:
+        - zabbix_api.user is defined and zabbix_api.user
+        - zabbix_host is defined
+      tags:
+        - create_maintenance
+
+    - name: set drain mode on haproxy
+      haproxy:
+        state: draining
+        host: "{{ inventory_hostname }}"
+        socket: "{{ haproxy_socket|default('/var/lib/haproxy/stats') }}"
+#        drain: true
+        wait: true
+        wait_interval: "{{ balancer_wait_interval | default(1) }}"
+        wait_retries: "{{ balancer_wait_retries | default(60) }}"
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups.balancer }}"
+      tags:
+        - haproxy
+
+    - include: nname="set drain mode on haproxy | notification" notify.yml msg="{{":"}}bamboo_continue{{":"}} [{{ ansible_fqdn }}] Set draining mode on balancer{{":"}} [OK]" emoji="{{":"}}transparent{{":"}}"
+
+    - name: set maintenance mode on haproxy
+      haproxy:
+        state: disabled
+        host: "{{ inventory_hostname }}"
+        socket: "{{ haproxy_socket|default('/var/lib/haproxy/stats') }}"
+        wait: true
+        wait_interval: "{{ balancer_wait_interval | default(1) }}"
+        wait_retries: "{{ balancer_wait_retries | default(60) }}"
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups.balancer }}"
+      tags:
+        - haproxy
+
+    - include: nname="set maintenance mode on haproxy | notification" notify.yml msg="{{":"}}bamboo_continue{{":"}} [{{ ansible_fqdn }}] Set maintenance mode on balancer{{":"}} [OK]" emoji="{{":"}}transparent{{":"}}"
+
+    - import_role:
+        name: deploy_jar
+
+    - name: set enable mode on haproxy
+      haproxy:
+        state: enabled
+        host: "{{ inventory_hostname }}"
+        socket: "{{ haproxy_socket|default('/var/lib/haproxy/stats') }}"
+        wait: true
+        wait_interval: "{{ balancer_wait_interval | default(1) }}"
+        wait_retries: "{{ balancer_wait_retries | default(60) }}"
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups.balancer }}"
+      tags:
+        - haproxy
+
+    - include: nname="set enable mode on haproxy | notification" notify.yml msg="{{":"}}bamboo_continue{{":"}} [{{ ansible_fqdn }}] Returning host to load balancing:{{":"}} [OK]" emoji="{{":"}}transparent{{":"}}"
+
+    - include: nname="load balancer recovery waiting | notification" notify.yml msg="{{":"}}bamboo_continue{{":"}} [{{ ansible_fqdn }}] waiting {{ balancer_recovery_timeout }} sec for load balancer to recovery node..." emoji="{{":"}}transparent{{":"}}"
+      when: balancer_recovery_timeout is defined
+
+    - name: load balancer recovery waiting
+      pause:
+        seconds: "{{ balancer_recovery_timeout }}"
+      when: balancer_recovery_timeout is defined and balancer_recovery_timeout
+      tags:
+        - haproxy
+
+    - name: disable zabbix maintenance
+      zabbix_maintenance:
+        name: "Deploy {{ zabbix_host }}"
+        host_names: "{{ zabbix_host }}"
+        server_url: "{{ zabbix_api.url }}"
+        login_user: "{{ zabbix_api.user }}"
+        login_password: "{{ zabbix_api.password }}"
+        state: absent
+      delegate_to: 127.0.0.1
+      when:
+        - zabbix_api.user is defined and zabbix_api.user
+        - zabbix_host is defined
+      tags:
+        - remove_maintenance
+

@@ -22,7 +22,7 @@ DOCUMENTATION = """
 module: slack_webapi
 short_description: Send Slack notifications via the Slack Web API
 description:
-    - The C(slack) module sends notifications to U(http://slack.com) via the Slack Web API interface
+    - The C(slack_webapi) module sends notifications to U(http://slack.com) via the Slack Web API interface
       Module based on slack module by Ramon de la Fuente (@ramondelafuente), but uses the Slack Web API
       instead of the Incoming WebHook integration. Main goals is to get proper JSON responce from Slack server
       and use 'chat.update' Slack API method.

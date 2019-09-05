@@ -6,7 +6,7 @@ Main goals is to get proper JSON responce from Slack server and use 'chat.update
 
 The C(slack) module sends notifications to U(http://slack.com) via the Slack Web API interface
       Module based on slack module by Ramon de la Fuente (@ramondelafuente), but uses the Slack Web API
-      instead of the Incoming WebHook integration. Main goals is to get proper JSON responce from Slack server
+      instead of the Incoming WebHook integration. Main goals are to get proper JSON responce from Slack server
       and use 'chat.update' Slack API method.
 
 ## Add a module locally

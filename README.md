@@ -2,10 +2,10 @@
 The `slack_webapi' module sends notifications to http://slack.com via the Slack Web API interface.
 It is based on [slack](https://docs.ansible.com/ansible/latest/modules/slack_module.html) Ansible module by Ramon de la Fuente (@ramondelafuente), but uses the Slack Web API instead of the Incoming WebHook integration.
 
-Main goals is to get proper JSON responce from Slack server and use 'chat.update' Slack API method.
+Main goals are to get proper JSON response from Slack server and use 'chat.update' Slack API method.
 
 The C(slack) module sends notifications to U(http://slack.com) via the Slack Web API interface
-      Module based on slack module by Ramon de la Fuente (@ramondelafuente), but uses the Slack Web API
+      Module based on slack_module by Ramon de la Fuente (@ramondelafuente), but uses the Slack Web API
       instead of the Incoming WebHook integration. Main goals are to get proper JSON responce from Slack server
       and use 'chat.update' Slack API method.
 
